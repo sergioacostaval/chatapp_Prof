@@ -84,3 +84,8 @@ Finalement, dans le frontend, l'etat `connected` devient `false`, donc l'applica
 Jai ajoute un historique des connexions et deconnexions dans la sidebar.
 Dans `server.js`, on utilise un tableau `activityLog` pour garder seulement les 5 dernieres activites. Quand un utilisateur rejoint ou quitte une room, le serveur envoie un evenement `activity_log` a tous les clients.
 Dans `Sidebar.js`, on ecoute les evenements `activity_log` et `activity_history` avec `useEffect`. Apres, jaffiche les activites dans une nouvelle section avec le titre `ACTIVITE RECENTE`.
+
+## Liens:
+- Github: https://github.com/sergioacostaval/chatapp_Prof
+- Render: https://chatapp-prof.onrender.com
+- Vercel: https://chatapp-prof.vercel.app/ 
