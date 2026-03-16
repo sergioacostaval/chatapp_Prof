@@ -8,7 +8,7 @@ import { useSocket } from "../context/SocketContext";
 import Message from "./Message";
 import Sidebar from "./Sidebar";
 
-function Chat({ username, room }) {
+function Chat({ username, room, setConnected, setRoom, setUsername }) {
     // 🔹 Récupération du socket via le Context
     const socket = useSocket();
     // 🔹 État local : liste des messages et contenu du champ de saisie
@@ -81,6 +81,17 @@ function Chat({ username, room }) {
         }
     };
 
+    //Question 4 - On ajoute LeaveRoom
+    const leaveRoom = () => {
+        if (!socket) return;
+
+        socket.emit("leave_room", { username, room });
+
+        setConnected(false);
+        setRoom("");
+        setUsername("");
+    };
+
     return (
         <div className="chatWrapper">
             {/* ---- SIDEBAR (liste des utilisateurs) ---- */}
@@ -103,6 +114,7 @@ function Chat({ username, room }) {
                     >
                         <span></span><span></span><span></span>
                     </button>
+
                     <div className="chatHeaderInfo">
                         <div className="chatHeaderAvatar">
                             {room.charAt(0).toUpperCase()}
@@ -112,6 +124,10 @@ function Chat({ username, room }) {
                             <p>{users.length} participant{users.length > 1 ? "s" : ""}</p>
                         </div>
                     </div>
+
+                    <button className="leaveBtn" onClick={leaveRoom}>
+                        Quitter la salle
+                    </button>
                 </div>
 
                 {/* Zone des messages */}

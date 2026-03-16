@@ -34,7 +34,6 @@ const io = new Server(server, {
 });
 
 
-
 // ─── Rooms prédéfinies ───────────────────────
 const rooms = {
     "Generale":  { users: [] },
@@ -42,6 +41,9 @@ const rooms = {
     "Support":    { users: [] },
     "Entraide":  { users: [] },
 };
+
+// Bloc pour historique activite
+const activityLog = [];
 
 // ─── Route REST : récupérer la liste des rooms ───
 app.get("/rooms", (req, res) => {
@@ -58,6 +60,9 @@ io.on("connection", (socket) => {
 
     // Envoyer la liste des rooms dès la connexion
     socket.emit("rooms_list", getRoomsList());
+
+    // Bloc pour envoyer historique
+    socket.emit("activity_history", activityLog);
 
     // ── Rejoindre une room ──────────────────
     socket.on("join_room", ({ username, room }) => {
@@ -82,6 +87,22 @@ io.on("connection", (socket) => {
 
         io.to(room).emit("room_users", rooms[room].users);
         io.emit("rooms_list", getRoomsList());
+
+        // Bloc pour ajouter activite
+        addActivity({
+            username,
+            action: "a rejoint",
+            room,
+            time: now(),
+        });
+
+        // Bloc pour diffuser activite
+        io.emit("activity_log", {
+            username,
+            action: "a rejoint",
+            room,
+            time: activityLog[0].time,
+        });
     });
 
     // ── Créer une nouvelle room ─────────────
@@ -97,6 +118,48 @@ io.on("connection", (socket) => {
     socket.on("send_message", (data) => {
         console.log(`💬 "${data.author}" → "${data.room}": ${data.message}`);
         io.to(data.room).emit("receive_message", data);
+    });
+
+    //Q4 - Leave Room
+    socket.on("leave_room", ({ username, room }) => {
+        if (!room || !rooms[room]) return;
+
+        socket.leave(room);
+
+        rooms[room].users = rooms[room].users.filter(
+            (u) => u.socketId !== socket.id
+        );
+
+        console.log(`❌ ${username} a quitté "${room}"`);
+
+        socket.to(room).emit("receive_message", {
+            author: "Système",
+            message: `${username} a quitté la room 👋`,
+            time: now(),
+            system: true,
+        });
+
+        io.to(room).emit("room_users", rooms[room].users);
+        io.emit("rooms_list", getRoomsList());
+
+        // Bloc pour ajouter activite
+        addActivity({
+            username,
+            action: "a quitte",
+            room,
+            time: now(),
+        });
+
+        // Bloc pour diffuser activite
+        io.emit("activity_log", {
+            username,
+            action: "a quitte",
+            room,
+            time: activityLog[0].time,
+        });
+
+        socket.currentRoom = null;
+        socket.currentUsername = null;
     });
 
     // ── Déconnexion ─────────────────────────
@@ -116,6 +179,22 @@ io.on("connection", (socket) => {
         });
         io.to(room).emit("room_users", rooms[room].users);
         io.emit("rooms_list", getRoomsList());
+
+        // Bloc pour ajouter activite
+        addActivity({
+            username,
+            action: "a quitte",
+            room,
+            time: now(),
+        });
+
+        // Bloc pour diffuser activite
+        io.emit("activity_log", {
+            username,
+            action: "a quitte",
+            room,
+            time: activityLog[0].time,
+        });
     });
 });
 
@@ -129,6 +208,14 @@ function getRoomsList() {
         name,
         count: data.users.length,
     }));
+}
+
+// Bloc pour garder 5 activites
+function addActivity(event) {
+    activityLog.unshift(event);
+    if (activityLog.length > 5) {
+        activityLog.pop();
+    }
 }
 
 // ─── Fonction pour récupérer l'IP locale ───

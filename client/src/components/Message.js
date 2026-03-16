@@ -29,6 +29,11 @@ function Message({ msg, username }) {
 
             {/* Heure d'envoi */}
             <span className="messageTime">{msg.time}</span>
+
+            {/*Double check*/}
+            {isOwn && (
+                <span className="messageRead">✓✓</span>
+            )}
         </div>
     );
 }

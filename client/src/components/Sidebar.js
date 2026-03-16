@@ -2,9 +2,37 @@
 // Sidebar.js — Panneau latéral avec la liste des utilisateurs
 // ============================================================
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useSocket } from "../context/SocketContext";
 
 function Sidebar({ users, room, show, onClose }) {
+    // Bloc pour prendre le socket
+    const socket = useSocket();
+
+    // Bloc pour stocker activite
+    const [activityLog, setActivityLog] = useState([]);
+
+    // Bloc pour ecouter activite
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleActivityLog = (event) => {
+            setActivityLog((prev) => [event, ...prev].slice(0, 5));
+        };
+
+        const handleActivityHistory = (history) => {
+            setActivityLog(history);
+        };
+
+        socket.on("activity_log", handleActivityLog);
+        socket.on("activity_history", handleActivityHistory);
+
+        return () => {
+            socket.off("activity_log", handleActivityLog);
+            socket.off("activity_history", handleActivityHistory);
+        };
+    }, [socket]);
+
     return (
         <>
             {/* Fond semi-transparent quand la sidebar est ouverte (mobile) */}
@@ -35,6 +63,21 @@ function Sidebar({ users, room, show, onClose }) {
                         ))
                     ) : (
                         <p className="noUsers">Aucun utilisateur</p>
+                    )}
+                </div>
+
+                {/* Bloc pour afficher activite */}
+                <div className="sidebarSection">
+                    <p className="sidebarLabel">ACTIVITE RECENTE</p>
+
+                    {activityLog.length > 0 ? (
+                        activityLog.map((item, index) => (
+                            <div className="activityItem" key={index}>
+                                {item.username} {item.action} #{item.room} a {item.time}
+                            </div>
+                        ))
+                    ) : (
+                        <p className="noUsers">Aucune activite</p>
                     )}
                 </div>
             </div>
